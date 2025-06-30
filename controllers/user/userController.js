@@ -57,24 +57,31 @@ export const userUpdateProfile = async (req, res, next) => {
       updateFields.image = fileData.path; // update image path if new image uploaded
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, { new: true }).select("-password");
+    const existingUser =  await User.findOne({_id: { $ne: userId}, email: email })
 
-    if (!updatedUser) {
-      return next(new HttpError("Updation failed", 404));
-    }
+     if(existingUser){
 
-    res.status(200).json({
-      status: true,
-      message: "Profile updated successfully",
-      data: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        image: updatedUser.image,
-      }
-    });
+       return next(new HttpError("Email already exists", 403));
+     } else {
 
+       const updatedUser = await User.findByIdAndUpdate(userId, updateFields, { new: true }).select("-password");
+   
+       if (!updatedUser) {
+         return next(new HttpError("Updation failed", 404));
+       }
+   
+       res.status(200).json({
+         status: true,
+         message: "Profile updated successfully",
+         data: {
+           _id: updatedUser._id,
+           name: updatedUser.name,
+           email: updatedUser.email,
+           role: updatedUser.role,
+           image: updatedUser.image,
+         }
+       });
+     }
   } catch (error) {
     console.error(error);
     return next(new HttpError("Something went wrong while updating the profile", 500));

@@ -13,7 +13,7 @@ export const addBook = async (req, res, next) => {
 
       const { title, author, price, description, category, rating, stock } = req.body;
       const { userId, userRole } = req.userData;
-      const fileData = req.file.path;
+      const fileData = req.file ? req.file.path : null;
 
       console.log(fileData,"req file")
   
@@ -47,40 +47,52 @@ export const addBook = async (req, res, next) => {
       }
     }
   } catch (error) {
-    console.log(error,"rrr")
     return next(new HttpError("Something went wrong while adding book", 500));
   }
 };
 
 // list book
-export const listBooks = async (req, res) => {
-  try {
-    const {userRole, userId} = req.userData
+export const listBooks = async (req, res, next) => {
+      try {
+        const { userRole, userId } = req.userData;
 
-    let books = []
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
 
-    if(userRole === "seller"){
-      books = await Book.find({is_deleted: false, seller: userId})
-      .populate({
-        path: "seller",
-        select: "name"
-      });
-    } else {
-      books = await Book.find({is_deleted: false}).populate({
-        path: "seller",
-        select: "name"
-      });;
-    }
+        let query = {
+          is_deleted: false,
+        };
 
-    res.status(200).json({ 
-      status: true,
-      message: "Books listed successfully",
-      data: books 
-    });
-  } catch (error) {
-    return next(new HttpError("Something went wrong while listing books", 500));
-  }
-};
+        if (userRole === 'seller') {
+          query.seller = userId;
+        } else {
+          if (req.query.search) {
+            const searchRegex = { $regex: search, $options: 'i' };
+            query.title = searchRegex
+          }
+        }
+
+        const totalBooks = await Book.countDocuments(query);
+        const books = await Book.find(query)
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate({
+            path: 'seller',
+            select: 'name',
+          });
+
+         
+
+        res.status(200).json({
+          status: true,
+          message: 'Books listed successfully',
+          data: books,
+          totalPages: Math.ceil(totalBooks / limit),
+        });
+      } catch (error) {
+        return next(new HttpError('Something went wrong while listing books', 500));
+      }
+    };
 
 // get book by id
 export const getBookById = async (req, res) => {
@@ -121,60 +133,67 @@ export const getBookById = async (req, res) => {
 };
 
 // Update book
-export const updateBook = async (req, res,next) => {
+export const updateBook = async (req, res, next) => {
   try {
-    const errors = validationResult(req)
-
-    if(!errors.isEmpty()){
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return next(new HttpError("Invalid data inputs passed, please try again", 400));
-    } else {
-    
-    const {id}= req.params;
-    const {userId, userRole} = req.userData
+    }
+
+    const { id } = req.params;
+    const { userId, userRole } = req.userData;
+    const fileData = req.file ? req.file.path : null;
 
     if (userRole !== 'seller') {
       return next(new HttpError("You are not authorized to update this book", 403));
-    } else {
-          const {
-            title,
-            author, 
-            price,
-            description,
-            stock,
-            rating,
-            category
-          } = req.body
-
-          const updatedBook = await Book.findOneAndUpdate(
-            {_id: id, is_deleted: false, seller: userId},
-            {
-              title,
-              author,
-              price,
-              description,
-              stock,
-              rating,
-              category,
-            },
-            { new: true}
-          )
-          
-          if(!updatedBook){
-            return next(new HttpError("Book Updating failed", 400));
-          } else {
-            res.status(200).json({ 
-              status: true,
-              message: 'Book updated successfully',
-              data: updatedBook 
-            });
-          }
     }
-  }
+
+    const {
+      title,
+      author,
+      price,
+      description,
+      stock,
+      rating,
+      category
+    } = req.body;
+
+    const updateFields = {
+      title,
+      author,
+      price,
+      description,
+      stock,
+      rating,
+      category,
+    };
+
+    if (fileData) {
+      updateFields.image = fileData;
+    }
+
+    const updatedBook = await Book.findOneAndUpdate(
+      { _id: id, is_deleted: false, seller: userId },
+      updateFields,
+      { new: true }
+    );
+
+    if (!updatedBook) {
+      return next(new HttpError("Book Updating failed", 400));
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Book updated successfully",
+      data: updatedBook
+    });
+
   } catch (error) {
-    console.log(error,"error")
-     return next(new HttpError("Something went wrong while updating book", 500));
+    console.log(error, "error");
+    return next(new HttpError("Something went wrong while updating book", 500));
   }
 };
+
 
 // Delete book
 export const deleteBook = async (req, res, next) => {

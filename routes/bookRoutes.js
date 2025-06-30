@@ -29,15 +29,16 @@ router.post('/add', upload.single('image'), [
 router.get('/', listBooks);
 router.get('/:id', getBookById);
 
-router.patch('/:id',[
+router.patch('/:id',upload.single('image'),[
   check('title').optional().notEmpty().withMessage('Title cannot be empty'),
   check('price').optional().isFloat({ gt: 0 }).withMessage('Price must be a number greater than 0'),
   check('author').optional().notEmpty().withMessage('Author cannot be empty'),
   check('description').optional().notEmpty().withMessage('Description cannot be empty'),
-  check('category').optional().isIn(['fiction', 'non-fiction', 'educational', 'biography', 'fantasy', 'other']).withMessage('Invalid category'),
+  check('category').optional().notEmpty().withMessage('Invalid category'),
   check('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
   check('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
 ],updateBook);
+
 router.patch('/delete/:id', deleteBook);
 
 export default router;
