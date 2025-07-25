@@ -28,6 +28,7 @@ export const userViewProfile = async (req, res, next) => {
 // Update user profile
 export const userUpdateProfile = async (req, res, next) => {
   try {
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return next(new HttpError("Invalid data inputs passed, please try again", 400));
@@ -54,7 +55,7 @@ export const userUpdateProfile = async (req, res, next) => {
     };
 
     if (fileData) {
-      updateFields.image = fileData.path; // update image path if new image uploaded
+      updateFields.image = fileData.path; 
     }
 
     const existingUser =  await User.findOne({_id: { $ne: userId}, email: email })

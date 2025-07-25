@@ -17,7 +17,7 @@ import path from 'path';
 
 // file filter 
 const fileFilter = (req, file, cb) => {
-  const allowed = /jpeg|jpg|png|gif|pdf/;
+  const allowed = /jpeg|webp|jpg|png|gif|pdf/;
   const extname = allowed.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowed.test(file.mimetype);
 

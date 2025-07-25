@@ -81,8 +81,6 @@ export const listBooks = async (req, res, next) => {
             select: 'name',
           });
 
-         
-
         res.status(200).json({
           status: true,
           message: 'Books listed successfully',
